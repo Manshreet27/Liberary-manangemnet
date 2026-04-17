@@ -7,6 +7,7 @@ import "@/lib/models/Library"; // register schema for populate
 import { bootstrapSuperAdmin } from "@/lib/bootstrap";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true,
   providers: [
     Credentials({
       credentials: {
