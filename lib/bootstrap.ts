@@ -2,12 +2,7 @@ import { connectDB } from "./db";
 import { User } from "./models/User";
 import bcrypt from "bcryptjs";
 
-let bootstrapped = false;
-
 export async function bootstrapSuperAdmin() {
-  if (bootstrapped) return;
-  bootstrapped = true;
-
   const email = process.env.SUPERADMIN_EMAIL;
   const password = process.env.SUPERADMIN_PASSWORD;
   const name = process.env.SUPERADMIN_NAME || "Super Admin";
@@ -19,8 +14,8 @@ export async function bootstrapSuperAdmin() {
   const existing = await User.findOne({ role: "super_admin" });
 
   if (!existing) {
-    // Create fresh
-    await User.create({ name, email, password, role: "super_admin", isActive: true });
+    const hashed = await bcrypt.hash(password, 10);
+    await User.create({ name, email, password: hashed, role: "super_admin", isActive: true });
     console.log("[bootstrap] Super admin created:", email);
   } else {
     // Update email, name, and password if env changed
