@@ -14,8 +14,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        await bootstrapSuperAdmin();
         await connectDB();
+        await bootstrapSuperAdmin();
         const user = await User.findOne({ email: credentials?.email }).populate("library");
         if (!user) return null;
         const valid = await bcrypt.compare(credentials?.password as string, user.password);
