@@ -1,36 +1,80 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Library Management System
 
-## Getting Started
+A full-featured library management system built with **Next.js 14**, **MongoDB**, and **Tailwind CSS**.
 
-First, run the development server:
+## Features
 
+- **Role-based access**: Super Admin, Admin, Receptionist
+- **Multi-library support**: Super Admin manages all libraries
+- **Member management**: Registration form with package assignment
+- **Monthly & Yearly packages**
+- **Biometric attendance sync**: Fetches from biometric device REST API
+- **Auto WhatsApp alerts**: Sends reminders 5 days before package expiry (if fee unpaid)
+
+## Setup
+
+### 1. Install dependencies
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Configure environment variables
+Copy `.env.local` and fill in your values:
+```
+MONGODB_URI=mongodb://localhost:27017/library_management
+NEXTAUTH_SECRET=your_secret_here
+NEXTAUTH_URL=http://localhost:3000
+TWILIO_ACCOUNT_SID=your_twilio_sid
+TWILIO_AUTH_TOKEN=your_twilio_token
+TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
+BIOMETRIC_API_URL=http://your-biometric-device-ip/api
+BIOMETRIC_API_KEY=your_key
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Seed the database
+```bash
+npx ts-node --project tsconfig.json scripts/seed.ts
+```
+Default credentials:
+- `superadmin@library.com` / `password123`
+- `admin@library.com` / `password123`
+- `receptionist@library.com` / `password123`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 4. Run the app
+```bash
+npm run dev
+```
 
-## Learn More
+### 5. WhatsApp Cron Job
+Run the cron scheduler separately:
+```bash
+npx ts-node --project tsconfig.json scripts/cron.ts
+```
+Or call `POST /api/alerts` with header `x-cron-secret: <NEXTAUTH_SECRET>` from any external cron service (e.g., cron-job.org, AWS EventBridge).
 
-To learn more about Next.js, take a look at the following resources:
+## Biometric Integration
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Each library has its own `biometricApiUrl` and `biometricApiKey`. The sync endpoint (`POST /api/attendance/sync`) calls:
+```
+GET {biometricApiUrl}/attendance/today
+Authorization: Bearer {biometricApiKey}
+```
+Expected response format:
+```json
+[
+  { "biometricId": "001", "checkIn": "2024-01-15T09:00:00Z", "checkOut": "2024-01-15T17:00:00Z" }
+]
+```
+Members must have their `biometricId` set to match the device records.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Role Permissions
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Feature | Super Admin | Admin | Receptionist |
+|---|---|---|---|
+| All Libraries | ✅ | ❌ | ❌ |
+| Own Library | ✅ | ✅ | ✅ |
+| Add Members | ✅ | ✅ | ✅ |
+| Manage Packages | ✅ | ✅ | ❌ |
+| Sync Biometric | ✅ | ✅ | ❌ |
+| Create Admins | ✅ | ❌ | ❌ |
+| Create Receptionists | ✅ | ✅ | ❌ |
