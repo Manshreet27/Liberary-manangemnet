@@ -3,10 +3,23 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/db";
 import { User } from "@/lib/models/User";
-import "@/lib/models/Library"; // register schema for populate
+import "@/lib/models/Library";
+
+const isProduction = process.env.NEXTAUTH_URL?.startsWith("https");
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
+  cookies: {
+    sessionToken: {
+      name: isProduction ? "__Secure-authjs.session-token" : "authjs.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: !!isProduction,
+      },
+    },
+  },
   providers: [
     Credentials({
       credentials: {
