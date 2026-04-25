@@ -6,6 +6,9 @@ import { User } from "@/lib/models/User";
 import "@/lib/models/Library"; // register schema for populate
 import { bootstrapSuperAdmin } from "@/lib/bootstrap";
 
+// Run once at module load, not on every login
+bootstrapSuperAdmin().catch(console.error);
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   providers: [
@@ -16,7 +19,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
       async authorize(credentials) {
         await connectDB();
-        await bootstrapSuperAdmin();
         const user = await User.findOne({ email: credentials?.email }).populate("library");
         if (!user) return null;
         const valid = await bcrypt.compare(credentials?.password as string, user.password);
