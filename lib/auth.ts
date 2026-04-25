@@ -4,10 +4,6 @@ import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/db";
 import { User } from "@/lib/models/User";
 import "@/lib/models/Library"; // register schema for populate
-import { bootstrapSuperAdmin } from "@/lib/bootstrap";
-
-// Run once at module load, not on every login
-bootstrapSuperAdmin().catch(console.error);
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,

@@ -19,19 +19,21 @@ export async function bootstrapSuperAdmin() {
   const existing = await User.findOne({ role: "super_admin" });
 
   if (!existing) {
+    // No super admin yet — create one with hashed password
     const hashed = await bcrypt.hash(password, 10);
-    await User.create({ name, email, password: hashed, role: "super_admin", isActive: true });
+    await User.findOneAndUpdate(
+      { role: "super_admin" },
+      { name, email, password: hashed, role: "super_admin", isActive: true },
+      { upsert: true, new: true }
+    );
     console.log("[bootstrap] Super admin created:", email);
     return;
   }
 
-  const passwordMatch = await bcrypt.compare(password, existing.password);
-  const needsUpdate = existing.email !== email || existing.name !== name || !passwordMatch;
-
-  if (needsUpdate) {
-    const hashed = !passwordMatch ? await bcrypt.hash(password, 10) : existing.password;
-    // Use findByIdAndUpdate to bypass the pre-save hook (avoids double-hashing)
-    await User.findByIdAndUpdate(existing._id, { email, name, password: hashed });
-    console.log("[bootstrap] Super admin updated:", email);
+  // Only update if email or name changed — never touch password here
+  // Password changes should be done via seed.mjs
+  if (existing.email !== email || existing.name !== name) {
+    await User.findByIdAndUpdate(existing._id, { email, name });
+    console.log("[bootstrap] Super admin email/name updated:", email);
   }
 }
